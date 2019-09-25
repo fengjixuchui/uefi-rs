@@ -1,22 +1,35 @@
 [package]
 name = "uefi"
-version = "0.1.0"
+version = "0.3.1"
 authors = ["Gabriel Majeri <gabriel.majeri6@gmail.com>"]
 readme = "README.md"
-publish = false
 edition = "2018"
+exclude = ["uefi-test-runner/**"]
+description = "Safe and easy-to-use wrapper for building UEFI apps"
+repository = "https://github.com/rust-osdev/uefi-rs"
+keywords = ["uefi", "efi"]
+categories = ["embedded", "no-std", "api-bindings"]
+license = "MPL-2.0"
+
+[badges]
+travis-ci = { repository = "rust-osdev/uefi-rs" }
+is-it-maintained-issue-resolution = { repository = "rust-osdev/uefi-rs" }
+is-it-maintained-open-issues = { repository = "rust-osdev/uefi-rs" }
+
+[features]
+default = []
+alloc = []
+logger = []
 
 [dependencies]
-bitflags = "1"
-log = { version = "0.4", default-features = false }
-ucs2 = "0.1"
-uefi-macros = { path = "uefi-macros" }
+bitflags = "1.1.0"
+log = { version = "0.4.8", default-features = false }
+ucs2 = "0.1.0"
+uefi-macros = "0.2.1"
 
 [workspace]
 members = [
-    "uefi-alloc",
     "uefi-exts",
-    "uefi-logger",
     "uefi-macros",
     "uefi-services",
     "uefi-test-runner",

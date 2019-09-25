@@ -1,5 +1,8 @@
 # uefi-rs
 
+[![Crates.io](https://img.shields.io/crates/v/uefi)](https://crates.io/crates/uefi)
+![Stars](https://img.shields.io/github/stars/rust-osdev/uefi-rs)
+![License](https://img.shields.io/github/license/rust-osdev/uefi-rs)
 [![Build Status](https://travis-ci.org/rust-osdev/uefi-rs.svg?branch=master)](https://travis-ci.org/rust-osdev/uefi-rs)
 
 ## Description
@@ -34,18 +37,20 @@ This project contains multiple sub-crates:
 - `uefi` (top directory): defines the standard UEFI tables / interfaces.
   The objective is to stay unopionated and safely wrap most interfaces.
 
+  Optional features:
+  - `alloc`: implements a global allocator using UEFI functions.
+    - This allows you to allocate objects on the heap.
+    - There's no guarantee of the efficiency of UEFI's allocator.
+  - `logger`: logging implementation for the standard [log] crate.
+    - Prints output to console.
+    - No buffering is done: this is not a high-performance logger.
+
 - `uefi-exts`: extension traits providing utility functions for common patterns.
-  - Requires the `alloc` crate (either use `uefi-alloc` or your own custom allocator).
+  - Requires the `alloc` crate (either enable the `alloc` optional feature or your own custom allocator).
 
 - `uefi-macros`: procedural macros that are used to derive some traits in `uefi`.
 
-- `uefi-services`: provides a panic handler, and initializes some helper crates:
-  - `uefi-logger`: logging implementation for the standard [log] crate.
-    - Prints output to console.
-    - No buffering is done: this is not a high-performance logger.
-  - `uefi-alloc`: implements a global allocator using UEFI functions.
-    - This allows you to allocate objects on the heap.
-    - There's no guarantee of the efficiency of UEFI's allocator.
+- `uefi-services`: provides a panic handler, and initializes the `alloc` / `logger` features.
 
 - `uefi-test-runner`: a UEFI application that runs unit / integration tests.
 
@@ -77,18 +82,13 @@ uses UEFI to set up an environment for it.
 
 ## Documentation
 
+The docs for the latest published crate version can be found at
+[docs.rs/uefi/](https://docs.rs/uefi/)
+
 This crate's documentation is fairly minimal, and you are encouraged to refer to
 the [UEFI specification][spec] for detailed information.
 
 [spec]: http://www.uefi.org/specifications
-
-### rustdoc
-
-Use the `build.py` script in the `uefi-test-runner` directory to generate the documentation:
-
-```sh
-./build.py doc
-```
 
 ## Sample code
 

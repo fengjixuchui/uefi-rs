@@ -32,7 +32,7 @@
 
 #[macro_use]
 pub mod data_types;
-pub(crate) use self::data_types::{unsafe_guid, Identify};
+pub use self::data_types::{unsafe_guid, Identify};
 pub use self::data_types::{CStr16, CStr8, Char16, Char8, Event, Guid, Handle};
 
 mod result;
@@ -43,3 +43,9 @@ pub mod table;
 pub mod proto;
 
 pub mod prelude;
+
+#[cfg(feature = "alloc")]
+pub mod alloc;
+
+#[cfg(feature = "logger")]
+pub mod logger;

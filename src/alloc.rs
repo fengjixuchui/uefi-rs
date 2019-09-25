@@ -1,6 +1,6 @@
-//! `uefi-alloc` implements Rust's global allocator interface using UEFI's memory allocation functions.
+//! This module implements Rust's global allocator interface using UEFI's memory allocation functions.
 //!
-//! Linking this crate in your app will allow you to use Rust's higher-level data structures,
+//! Enabling the `alloc` optional feature in your app will allow you to use Rust's higher-level data structures,
 //! like boxes, vectors, hash maps, linked lists and so on.
 //!
 //! # Usage
@@ -11,16 +11,11 @@
 //! Call the `exit_boot_services` function before exiting UEFI boot services.
 //! Failure to do so will turn subsequent allocation into undefined behaviour.
 
-// Enable additional lints.
-#![warn(missing_docs)]
-#![deny(clippy::all)]
-#![no_std]
-
 use core::alloc::{GlobalAlloc, Layout};
 use core::ptr::{self, NonNull};
 
-use uefi::prelude::*;
-use uefi::table::boot::{BootServices, MemoryType};
+use crate::prelude::*;
+use crate::table::boot::{BootServices, MemoryType};
 
 /// Reference to the boot services table, used to call the pool memory allocation functions.
 ///
@@ -29,6 +24,8 @@ use uefi::table::boot::{BootServices, MemoryType};
 static mut BOOT_SERVICES: Option<NonNull<BootServices>> = None;
 
 /// Initializes the allocator.
+///
+/// # Safety
 ///
 /// This function is unsafe because you _must_ make sure that exit_boot_services
 /// will be called when UEFI boot services will be exited.

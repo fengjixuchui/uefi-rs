@@ -21,12 +21,6 @@ extern crate rlibc;
 // Core types.
 extern crate uefi;
 
-// Logging support
-extern crate uefi_logger;
-
-// Allocator support.
-extern crate uefi_alloc;
-
 #[macro_use]
 extern crate log;
 
@@ -45,7 +39,7 @@ use uefi::{Event, Result};
 static mut SYSTEM_TABLE: Option<SystemTable<Boot>> = None;
 
 /// Global logger object
-static mut LOGGER: Option<uefi_logger::Logger> = None;
+static mut LOGGER: Option<uefi::logger::Logger> = None;
 
 /// Obtains a pointer to the system table.
 ///
@@ -81,7 +75,7 @@ pub fn init(st: &SystemTable<Boot>) -> Result {
         // Setup logging and memory allocation
         let boot_services = st.boot_services();
         init_logger(st);
-        uefi_alloc::init(boot_services);
+        uefi::alloc::init(boot_services);
 
         // Schedule these tools to be disabled on exit from UEFI boot services
         boot_services
@@ -103,7 +97,7 @@ unsafe fn init_logger(st: &SystemTable<Boot>) {
 
     // Construct the logger.
     let logger = {
-        LOGGER = Some(uefi_logger::Logger::new(stdout));
+        LOGGER = Some(uefi::logger::Logger::new(stdout));
         LOGGER.as_ref().unwrap()
     };
 
@@ -128,7 +122,7 @@ fn exit_boot_services(_e: Event) {
             logger.disable();
         }
     }
-    uefi_alloc::exit_boot_services();
+    uefi::alloc::exit_boot_services();
 }
 
 #[lang = "eh_personality"]

@@ -122,6 +122,9 @@ def run_qemu():
         # Use a modern machine, with acceleration if possible.
         '-machine', 'q35,accel=kvm:tcg',
 
+        # Multi-processor services protocol test needs exactly 3 CPUs.
+        '-smp', '3',
+
         # Allocate some memory.
         '-m', '128M',
 
@@ -221,8 +224,13 @@ def run_qemu():
                     # Delete the screenshot once done
                     os.remove('screenshot.ppm')
     finally:
-        # Wait for QEMU to finish
-        status = qemu.wait()
+        try:
+            # Wait for QEMU to finish
+            status = qemu.wait(15)
+        except sp.TimeoutExpired:
+            print('Tests are taking too long to run, killing QEMU', file=sys.stderr)
+            qemu.kill()
+            status = -1
 
         # Delete the monitor pipes
         os.remove(monitor_input_path)
