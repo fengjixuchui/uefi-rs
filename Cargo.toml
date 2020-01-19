@@ -1,10 +1,11 @@
 [package]
 name = "uefi"
-version = "0.4.2"
+version = "0.4.3"
 authors = ["Gabriel Majeri <gabriel.majeri6@gmail.com>"]
 readme = "README.md"
 edition = "2018"
 exclude = [
+    ".cargo/**",
     "uefi-macros/**",
     "uefi-services/**",
     "uefi-test-runner/**",
@@ -27,9 +28,9 @@ exts = []
 logger = []
 
 [dependencies]
-bitflags = "1.1.0"
+bitflags = "1.2.1"
 log = { version = "0.4.8", default-features = false }
-ucs2 = "0.2.0"
+ucs2 = "0.3.1"
 uefi-macros = "0.3.0"
 
 [workspace]
