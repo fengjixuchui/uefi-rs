@@ -1,9 +1,10 @@
 # uefi-rs
 
 [![Crates.io](https://img.shields.io/crates/v/uefi)](https://crates.io/crates/uefi)
+[![Docs.rs](https://docs.rs/uefi/badge.svg)](https://docs.rs/uefi)
 ![Stars](https://img.shields.io/github/stars/rust-osdev/uefi-rs)
 ![License](https://img.shields.io/github/license/rust-osdev/uefi-rs)
-[![Build Status](https://travis-ci.org/rust-osdev/uefi-rs.svg?branch=master)](https://travis-ci.org/rust-osdev/uefi-rs)
+![Build status](https://github.com/rust-osdev/uefi-rs/workflows/Rust/badge.svg)
 
 ## Description
 
@@ -12,7 +13,7 @@ OS loaders, hypervisors and other low-level applications. While it started out
 as x86-specific, it has been adopted on other platforms, such as ARM.
 
 This crate makes it easy to both:
-  - Write UEFI applications in Rust (via the [`x86_64-unknown-uefi`][rustc-uefi] target)
+  - Write UEFI applications in Rust (for `x86_64` or `aarch64`)
   - Call UEFI functions from an OS (usually built with a [custom target][rustc-custom])
 
 The objective is to provide **safe** and **performant** wrappers for UEFI interfaces,
@@ -20,12 +21,10 @@ and allow developers to write idiomatic Rust code.
 
 Check out @gilomendes [blog post on getting started with UEFI in Rust][gm-blog].
 
-**Note**: due to some issues with the Rust compiler, this crate currently works
-and has been tested _only_ with **64-bit** UEFI.
+**Note**: this crate currently has only been tested with **64-bit** UEFI on x86/ARM.
 
 [UEFI]: https://en.wikipedia.org/wiki/Unified_Extensible_Firmware_Interface
 [gm-blog]: https://medium.com/@gil0mendes/an-efi-app-a-bit-rusty-82c36b745f49
-[rustc-uefi]: https://github.com/rust-lang/rust/pull/56769
 [rustc-custom]: https://doc.rust-lang.org/rustc/targets/custom.html
 
 ![uefi-rs running in QEMU](https://imgur.com/SFPSVuO.png)
@@ -99,9 +98,14 @@ Check out the testing [README.md](uefi-test-runner/README.md) for instructions o
 
 For instructions on how to create your own UEFI apps, see the [BUILDING.md](BUILDING.md) file.
 
+## Contributing
+
+We welcome issues and pull requests! For instructions on how to set up a development
+environment and how to add new protocols, check out [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ## License
 
 The code in this repository is licensed under the Mozilla Public License 2.
 This license allows you to use the crate in proprietary programs, but any modifications to the files must be open-sourced.
 
-The full text of the license is available in the `LICENSE` file.
+The full text of the license is available in the [license file](LICENSE).

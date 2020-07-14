@@ -1,6 +1,6 @@
 [package]
 name = "uefi-services"
-version = "0.2.2"
+version = "0.2.4"
 authors = ["Gabriel Majeri <gabriel.majeri6@gmail.com>"]
 edition = "2018"
 description = "Higher-level utilities for uefi-rs"
@@ -15,11 +15,12 @@ is-it-maintained-issue-resolution = { repository = "rust-osdev/uefi-rs" }
 is-it-maintained-open-issues = { repository = "rust-osdev/uefi-rs" }
 
 [dependencies]
-rlibc = "1.0.0"
-x86_64 = "0.8.3"
-
-uefi = { version = "0.4.4", features = ["alloc", "logger"] }
+uefi = { version = "0.4.6", features = ["alloc", "logger"] }
 log = { version = "0.4.8", default-features = false }
+cfg-if = "0.1.10"
+
+[target.'cfg(target_arch = "x86_64")'.dependencies]
+x86_64 = "0.11.1"
 
 [features]
 # Enable QEMU-specific functionality

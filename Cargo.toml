@@ -1,6 +1,6 @@
 [package]
 name = "uefi"
-version = "0.4.4"
+version = "0.4.7"
 authors = ["Gabriel Majeri <gabriel.majeri6@gmail.com>"]
 readme = "README.md"
 edition = "2018"
@@ -9,6 +9,7 @@ exclude = [
     "uefi-macros/**",
     "uefi-services/**",
     "uefi-test-runner/**",
+    "uefi-hello-world-aarch64/**"
 ]
 description = "Safe and easy-to-use wrapper for building UEFI apps"
 repository = "https://github.com/rust-osdev/uefi-rs"
@@ -26,12 +27,15 @@ default = []
 alloc = []
 exts = []
 logger = []
+# Ignore text output errors in logger as a workaround for firmware issues that
+# were observed on the VirtualBox UEFI implementation (see uefi-rs#121)
+ignore-logger-errors = []
 
 [dependencies]
 bitflags = "1.2.1"
 log = { version = "0.4.8", default-features = false }
 ucs2 = "0.3.1"
-uefi-macros = "0.3.0"
+uefi-macros = "0.3.2"
 
 [workspace]
 members = [
@@ -45,3 +49,7 @@ panic = "abort"
 
 [profile.release]
 panic = "abort"
+
+[patch.crates-io]
+uefi-macros = { path = "uefi-macros" }
+uefi = { path = "." }
