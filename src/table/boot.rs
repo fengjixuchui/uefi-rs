@@ -205,10 +205,16 @@ impl BootServices {
     ///
     /// The returned key is a unique identifier of the current configuration of memory.
     /// Any allocations or such will change the memory map's key.
+    ///
+    /// If you want to store the resulting memory map without having to keep
+    /// the buffer around, you can use `.copied().collect()` on the iterator.
     pub fn memory_map<'buf>(
         &self,
         buffer: &'buf mut [u8],
-    ) -> Result<(MemoryMapKey, MemoryMapIter<'buf>)> {
+    ) -> Result<(
+        MemoryMapKey,
+        impl ExactSizeIterator<Item = &'buf MemoryDescriptor> + Clone,
+    )> {
         let mut map_size = buffer.len();
         MemoryDescriptor::assert_aligned(buffer);
         #[allow(clippy::cast_ptr_alignment)]
@@ -643,6 +649,15 @@ pub enum MemoryType: u32 => {
     PERSISTENT_MEMORY       = 14,
 }}
 
+impl MemoryType {
+    /// Construct a custom `MemoryType`. Values in the range `0x80000000..=0xffffffff` are free for use if you are
+    /// an OS loader.
+    pub const fn custom(value: u32) -> MemoryType {
+        assert!(value >= 0x80000000);
+        MemoryType(value)
+    }
+}
+
 /// Memory descriptor version number
 pub const MEMORY_DESCRIPTOR_VERSION: u32 = 1;
 
@@ -722,12 +737,8 @@ bitflags! {
 pub struct MemoryMapKey(usize);
 
 /// An iterator of memory descriptors
-///
-/// This type is only exposed in interfaces due to current limitations of
-/// `impl Trait` which may be lifted in the future. It is therefore recommended
-/// that you refrain from directly manipulating it in your code.
-#[derive(Debug)]
-pub struct MemoryMapIter<'buf> {
+#[derive(Debug, Clone)]
+struct MemoryMapIter<'buf> {
     buffer: &'buf [u8],
     entry_size: usize,
     index: usize,
@@ -758,7 +769,7 @@ impl<'buf> Iterator for MemoryMapIter<'buf> {
     }
 }
 
-impl<'buf> ExactSizeIterator for MemoryMapIter<'buf> {}
+impl ExactSizeIterator for MemoryMapIter<'_> {}
 
 /// The type of handle search to perform.
 #[derive(Debug, Copy, Clone)]
