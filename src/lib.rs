@@ -24,11 +24,11 @@
 //! therefore all the network protocols will be unavailable.
 
 #![cfg_attr(feature = "exts", feature(allocator_api, alloc_layout_extra))]
-#![feature(optin_builtin_traits)]
-#![feature(try_trait)]
+#![feature(auto_traits)]
+#![feature(control_flow_enum)]
+#![feature(try_trait_v2)]
 #![feature(abi_efiapi)]
 #![feature(negative_impls)]
-#![feature(const_fn)]
 #![feature(const_panic)]
 #![no_std]
 // Enable some additional warnings and lints.

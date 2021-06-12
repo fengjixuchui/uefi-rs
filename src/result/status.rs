@@ -1,6 +1,9 @@
 use super::{Completion, Error, Result};
-use core::fmt::Debug;
-use core::ops;
+use core::{
+    convert::Infallible,
+    ops::{ControlFlow, FromResidual, Try},
+};
+use core::{fmt::Debug, num::NonZeroUsize};
 
 /// Bit indicating that an UEFI status code is an error
 const ERROR_BIT: usize = 1 << (core::mem::size_of::<usize>() * 8 - 1);
@@ -125,6 +128,7 @@ impl Status {
 
     /// Converts this status code into a result with a given value.
     #[inline]
+    #[allow(clippy::result_unit_err)]
     pub fn into_with_val<T>(self, val: impl FnOnce() -> T) -> Result<T, ()> {
         if !self.is_error() {
             Ok(Completion::new(self, val()))
@@ -161,29 +165,50 @@ impl Status {
     }
 }
 
-// An UEFI status is equivalent to a Result with no data or rerror payload
-
-impl Into<Result<(), ()>> for Status {
+// An UEFI status is equivalent to a Result with no data or error payload
+impl From<Status> for Result<(), ()> {
     #[inline]
-    fn into(self) -> Result<(), ()> {
-        self.into_with(|| (), |_| ())
+    fn from(status: Status) -> Result<(), ()> {
+        status.into_with(|| (), |_| ())
     }
 }
 
-impl ops::Try for Status {
-    type Ok = Completion<()>;
-    type Error = Error<()>;
+pub struct StatusResidual(NonZeroUsize);
 
-    fn into_result(self) -> Result<(), ()> {
-        self.into()
+impl Try for Status {
+    type Output = Completion<()>;
+    type Residual = StatusResidual;
+
+    fn branch(self) -> ControlFlow<Self::Residual, Self::Output> {
+        match NonZeroUsize::new(self.0) {
+            Some(r) => ControlFlow::Break(StatusResidual(r)),
+            None => ControlFlow::Continue(Completion::from(self)),
+        }
     }
 
-    fn from_error(error: Self::Error) -> Self {
-        error.status()
+    fn from_output(output: Self::Output) -> Self {
+        output.status()
     }
+}
 
-    fn from_ok(ok: Self::Ok) -> Self {
-        ok.status()
+impl FromResidual for Status {
+    fn from_residual(r: StatusResidual) -> Self {
+        Status(r.0.into())
+    }
+}
+
+impl<T> FromResidual<StatusResidual> for Result<T, ()> {
+    fn from_residual(r: StatusResidual) -> Self {
+        Err(Status(r.0.into()).into())
+    }
+}
+
+impl FromResidual<core::result::Result<Infallible, Error>> for Status {
+    fn from_residual(r: core::result::Result<Infallible, Error>) -> Self {
+        match r {
+            Err(err) => err.status(),
+            Ok(infallible) => match infallible {},
+        }
     }
 }
 

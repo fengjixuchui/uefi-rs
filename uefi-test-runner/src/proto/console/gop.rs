@@ -25,7 +25,7 @@ fn set_graphics_mode(gop: &mut GraphicsOutput) {
     let mode = gop
         .modes()
         .map(|mode| mode.expect("Warnings encountered while querying mode"))
-        .find(|ref mode| {
+        .find(|mode| {
             let info = mode.info();
             info.resolution() == (1024, 768)
         })
@@ -59,13 +59,13 @@ fn draw_fb(gop: &mut GraphicsOutput) {
     type PixelWriter = unsafe fn(&mut FrameBuffer, usize, [u8; 3]);
     unsafe fn write_pixel_rgb(fb: &mut FrameBuffer, pixel_base: usize, rgb: [u8; 3]) {
         fb.write_value(pixel_base, rgb);
-    };
+    }
     unsafe fn write_pixel_bgr(fb: &mut FrameBuffer, pixel_base: usize, rgb: [u8; 3]) {
         fb.write_value(pixel_base, [rgb[2], rgb[1], rgb[0]]);
-    };
+    }
     let write_pixel: PixelWriter = match mi.pixel_format() {
-        PixelFormat::RGB => write_pixel_rgb,
-        PixelFormat::BGR => write_pixel_bgr,
+        PixelFormat::Rgb => write_pixel_rgb,
+        PixelFormat::Bgr => write_pixel_bgr,
         _ => {
             info!("This pixel format is not supported by the drawing demo");
             return;

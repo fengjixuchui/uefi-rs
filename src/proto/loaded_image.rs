@@ -1,4 +1,4 @@
-//! Loaded image protocol.
+//! `LoadedImage` protocol.
 
 use crate::{
     data_types::{CStr16, Char16},
@@ -8,7 +8,7 @@ use crate::{
 };
 use core::{ffi::c_void, str};
 
-/// The Loaded Image protocol. This can be opened on any image handle using the `HandleProtocol` boot service.
+/// The LoadedImage protocol. This can be opened on any image handle using the `HandleProtocol` boot service.
 #[repr(C)]
 #[unsafe_guid("5b1b31a1-9562-11d2-8e3f-00a0c969723b")]
 #[derive(Protocol)]
@@ -32,7 +32,7 @@ pub struct LoadedImage {
     image_code_type: MemoryType,
     image_data_type: MemoryType,
     /// This is a callback that a loaded image can use to do cleanup. It is called by the
-    /// UnloadImage boot service.
+    /// `UnloadImage` boot service.
     unload: extern "efiapi" fn(image_handle: Handle) -> Status,
 }
 
@@ -63,6 +63,20 @@ impl LoadedImage {
                 ucs2::decode(ucs2_slice, buffer).map_err(|_| LoadOptionsError::BufferTooSmall)?;
             str::from_utf8(&buffer[0..length]).map_err(|_| LoadOptionsError::NotValidUtf8)
         }
+    }
+
+    /// Set the load options for the image. This can be used prior to
+    /// calling `BootServices.start_image` to control the command line
+    /// passed to the image.
+    ///
+    /// # Safety
+    ///
+    /// This function takes `options` as a raw pointer because the
+    /// load options data is not owned by `LoadedImage`. The caller
+    /// must ensure that the memory lives long enough.
+    pub unsafe fn set_load_options(&mut self, options: *const Char16, size: u32) {
+        self.load_options = options;
+        self.load_options_size = size;
     }
 
     /// Returns the base address and the size in bytes of the loaded image.

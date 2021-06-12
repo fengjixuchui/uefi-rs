@@ -110,7 +110,7 @@ impl<'boot> GraphicsOutput<'boot> {
     }
 
     /// Returns information about all available graphics modes.
-    pub fn modes<'gop>(&'gop self) -> impl ExactSizeIterator<Item = Completion<Mode>> + 'gop {
+    pub fn modes(&'_ self) -> impl ExactSizeIterator<Item = Completion<Mode>> + '_ {
         ModeIter {
             gop: self,
             current: 0,
@@ -337,9 +337,9 @@ struct ModeData<'info> {
 #[repr(u32)]
 pub enum PixelFormat {
     /// Each pixel is 32-bit long, with 24-bit RGB, and the last byte is reserved.
-    RGB = 0,
+    Rgb = 0,
     /// Each pixel is 32-bit long, with 24-bit BGR, and the last byte is reserved.
-    BGR,
+    Bgr,
     /// Custom pixel format, check the associated bitmask.
     Bitmask,
     /// The graphics mode does not support drawing directly to the frame buffer.
@@ -444,9 +444,10 @@ impl<'gop> Iterator for ModeIter<'gop> {
     fn next(&mut self) -> Option<Self::Item> {
         let index = self.current;
         if index < self.max {
+            let m = self.gop.query_mode(index);
             self.current += 1;
 
-            self.gop.query_mode(index).ok().or_else(|| self.next())
+            m.ok().or_else(|| self.next())
         } else {
             None
         }

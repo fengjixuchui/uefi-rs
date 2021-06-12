@@ -6,4 +6,6 @@
 
 pub mod file;
 
+pub mod block;
 pub mod fs;
+pub mod partition;

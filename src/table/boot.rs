@@ -2,8 +2,10 @@
 
 use super::Header;
 use crate::data_types::Align;
-use crate::proto::Protocol;
-use crate::{Event, Guid, Handle, Result, Status};
+use crate::proto::{device_path::DevicePath, Protocol};
+#[cfg(feature = "exts")]
+use crate::proto::{loaded_image::LoadedImage, media::fs::SimpleFileSystem};
+use crate::{Char16, Event, Guid, Handle, Result, Status};
 #[cfg(feature = "exts")]
 use alloc_api::vec::Vec;
 use bitflags::bitflags;
@@ -73,14 +75,29 @@ pub struct BootServices {
         buf_sz: &mut usize,
         buf: *mut Handle,
     ) -> Status,
-    locate_device_path: usize,
+    locate_device_path: unsafe extern "efiapi" fn(
+        proto: &Guid,
+        device_path: &mut *mut DevicePath,
+        out_handle: *mut Handle,
+    ) -> Status,
     install_configuration_table: usize,
 
     // Image services
-    load_image: usize,
-    start_image: usize,
+    load_image: unsafe extern "efiapi" fn(
+        boot_policy: u8,
+        parent_image_handle: Handle,
+        device_path: *const DevicePath,
+        source_buffer: *const u8,
+        source_size: usize,
+        *mut Handle,
+    ) -> Status,
+    start_image: unsafe extern "efiapi" fn(
+        image_handle: Handle,
+        exit_data_size: *mut usize,
+        exit_data: &mut *mut Char16,
+    ) -> Status,
     exit: usize,
-    unload_image: usize,
+    unload_image: extern "efiapi" fn(image_handle: Handle) -> Status,
     exit_boot_services:
         unsafe extern "efiapi" fn(image_handle: Handle, map_key: MemoryMapKey) -> Status,
 
@@ -416,6 +433,54 @@ impl BootServices {
         }
     }
 
+    /// Locates the handle to a device on the device path that supports the specified protocol.
+    pub fn locate_device_path<P: Protocol>(&self, device_path: &mut DevicePath) -> Result<Handle> {
+        unsafe {
+            let mut handle = Handle::uninitialized();
+            let mut device_path_ptr = device_path as *mut DevicePath;
+            (self.locate_device_path)(&P::GUID, &mut device_path_ptr, &mut handle)
+                .into_with_val(|| handle)
+        }
+    }
+
+    /// Load an EFI image from a buffer.
+    pub fn load_image_from_buffer(
+        &self,
+        parent_image_handle: Handle,
+        source_buffer: &[u8],
+    ) -> Result<Handle> {
+        unsafe {
+            let boot_policy = 0;
+            let device_path = ptr::null();
+            let source_size = source_buffer.len();
+            let mut image_handle = Handle::uninitialized();
+            (self.load_image)(
+                boot_policy,
+                parent_image_handle,
+                device_path,
+                source_buffer.as_ptr(),
+                source_size,
+                &mut image_handle,
+            )
+            .into_with_val(|| image_handle)
+        }
+    }
+
+    /// Unload an EFI image.
+    pub fn unload_image(&self, image_handle: Handle) -> Result {
+        (self.unload_image)(image_handle).into()
+    }
+
+    /// Transfer control to a loaded image's entry point.
+    pub fn start_image(&self, image_handle: Handle) -> Result {
+        unsafe {
+            // TODO: implement returning exit data to the caller.
+            let mut exit_data_size: usize = 0;
+            let mut exit_data: *mut Char16 = ptr::null_mut();
+            (self.start_image)(image_handle, &mut exit_data_size, &mut exit_data).into()
+        }
+    }
+
     /// Exits the UEFI boot services
     ///
     /// This unsafe method is meant to be an implementation detail of the safe
@@ -510,7 +575,7 @@ impl BootServices {
     ///
     /// This function is unsafe as it can be used to violate most safety
     /// invariants of the Rust type system.
-    pub unsafe fn memset(&self, buffer: *mut u8, size: usize, value: u8) {
+    pub unsafe fn set_mem(&self, buffer: *mut u8, size: usize, value: u8) {
         (self.set_mem)(buffer, size, value);
     }
 }
@@ -544,6 +609,34 @@ impl BootServices {
         status1
             .into_with_val(|| buffer)
             .map(|completion| completion.with_status(status2))
+    }
+
+    /// Retrieves the `SimpleFileSystem` protocol associated with
+    /// the device the given image was loaded from.
+    ///
+    /// You can retrieve the SFS protocol associated with the boot partition
+    /// by passing the image handle received by the UEFI entry point to this function.
+    pub fn get_image_file_system(
+        &self,
+        image_handle: Handle,
+    ) -> Result<&UnsafeCell<SimpleFileSystem>> {
+        let loaded_image = self
+            .handle_protocol::<LoadedImage>(image_handle)?
+            .expect("Failed to retrieve `LoadedImage` protocol from handle");
+        let loaded_image = unsafe { &*loaded_image.get() };
+
+        let device_handle = loaded_image.device();
+
+        let device_path = self
+            .handle_protocol::<DevicePath>(device_handle)?
+            .expect("Failed to retrieve `DevicePath` protocol from image's device handle");
+        let device_path = unsafe { &mut *device_path.get() };
+
+        let device_handle = self
+            .locate_device_path::<SimpleFileSystem>(device_path)?
+            .expect("Failed to locate `SimpleFileSystem` protocol on device path");
+
+        self.handle_protocol::<SimpleFileSystem>(device_handle)
     }
 }
 

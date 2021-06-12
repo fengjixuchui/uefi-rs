@@ -20,9 +20,9 @@ mod boot;
 mod proto;
 
 #[entry]
-fn efi_main(image: Handle, st: SystemTable<Boot>) -> Status {
+fn efi_main(image: Handle, mut st: SystemTable<Boot>) -> Status {
     // Initialize utilities (logging, memory allocation...)
-    uefi_services::init(&st).expect_success("Failed to initialize utilities");
+    uefi_services::init(&mut st).expect_success("Failed to initialize utilities");
 
     // Reset the console before running all the other tests.
     st.stdout()
@@ -34,10 +34,16 @@ fn efi_main(image: Handle, st: SystemTable<Boot>) -> Status {
 
     // Test all the boot services.
     let bt = st.boot_services();
+
+    // Try retrieving a handle to the file system the image was booted from.
+    bt.get_image_file_system(image)
+        .expect("Failed to retrieve boot file system")
+        .unwrap();
+
     boot::test(bt);
 
     // Test all the supported protocols.
-    proto::test(&st);
+    proto::test(&mut st);
 
     // TODO: test the runtime services.
     // These work before boot services are exited, but we'd probably want to
@@ -101,7 +107,7 @@ fn check_screenshot(bt: &BootServices, name: &str) {
     }
 }
 
-fn shutdown(image: uefi::Handle, st: SystemTable<Boot>) -> ! {
+fn shutdown(image: uefi::Handle, mut st: SystemTable<Boot>) -> ! {
     use uefi::table::runtime::ResetType;
 
     // Get our text output back.
@@ -122,6 +128,16 @@ fn shutdown(image: uefi::Handle, st: SystemTable<Boot>) -> ! {
     let (st, _iter) = st
         .exit_boot_services(image, &mut mmap_storage[..])
         .expect_success("Failed to exit boot services");
+
+    #[cfg(target_arch = "x86_64")]
+    {
+        if cfg!(feature = "qemu") {
+            use qemu_exit::QEMUExit;
+            let custom_exit_success = 3;
+            let qemu_exit_handle = qemu_exit::X86::new(0xF4, custom_exit_success);
+            qemu_exit_handle.exit_success();
+        }
+    }
 
     // Shut down the system
     let rt = unsafe { st.runtime_services() };
